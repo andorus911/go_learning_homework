@@ -1,0 +1,3 @@
+Генерация дней недели с iota https://play.golang.org/p/XEYGCZBbXNl
+Перенос массива в хэш-таблицу https://play.golang.org/p/xClQfy0eSjr
+Степени числа 4 с iota https://play.golang.org/p/4wTIQe9ETnx
