@@ -2,27 +2,59 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"strings"
+	"unicode"
 )
 
 func main() {
-	str := os.Args[1]
+	// Args should be in 'quotes' for Ubuntu and without for Windows
+	str := UnpackString(os.Args[1])
 
-	for i, v := range str {
+	fmt.Println(str)
+}
 
-		if v <= '9' && v >= '1' {
-			if i == 0 {
-				fmt.Println("Incorrect string.")
-				os.Exit(1)
-			}
+func UnpackString(str string) string {
+
+	if unicode.IsDigit(rune(str[0])) {
+
+		log.Println("Incorrect string.")
+		os.Exit(1)
+	}
+
+	var unpackedString strings.Builder
+	var lastRune rune
+
+	inEscape := false
+
+	for _, v := range str {
+
+		if inEscape {
+
+			fmt.Fprintf(&unpackedString, "%v", string(v))
+			lastRune = v
+			inEscape = false
+			continue
+		}
+
+		if v == '\\' {
+
+			inEscape = true
+			continue
+		}
+
+		if unicode.IsDigit(v) {
 
 			for j := 0; j < (int(v) - '0' - 1); j++ {
 
-				fmt.Printf("%s", string(str[i-1]))
+				fmt.Fprintf(&unpackedString, "%v", string(lastRune))
 			}
 		} else {
-			fmt.Printf("%s", string(v))
+
+			fmt.Fprintf(&unpackedString, "%v", string(v))
+			lastRune = v
 		}
 	}
-	fmt.Println()
+	return unpackedString.String()
 }
