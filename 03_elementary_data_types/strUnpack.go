@@ -20,7 +20,7 @@ func UnpackString(str string) string {
 	if unicode.IsDigit(rune(str[0])) {
 
 		log.Println("Incorrect string.")
-		os.Exit(1)
+		return ""
 	}
 
 	var unpackedString strings.Builder
