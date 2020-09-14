@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"go_learning_homework/ch04_structs/jsonio"
-	"go_learning_homework/ch04_structs/xmlio"
+	"go_learning_homework/ch04_structs/json-xml-io/jsonio"
+	"go_learning_homework/ch04_structs/json-xml-io/xmlio"
 	"log"
 	"os"
 	"strings"
@@ -22,8 +22,9 @@ func main() {
 
 	filename := arguments[1]
 	var myNumbers tenNumbers
+	expansion := strings.Split(filename, ".")
 
-	switch namedot := strings.Split(filename, "."); namedot[1] {
+	switch expansion[len(expansion)-1] {
 	case "json":
 		if err := jsonio.LoadFromJson(filename, &myNumbers); err == nil {
 			fmt.Println(myNumbers)
