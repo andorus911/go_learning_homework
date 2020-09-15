@@ -45,7 +45,9 @@ func Top(topNumber int, dict map[string]int) []Pair {
 			if count > pairList[i].Count {
 				pairList[i].Count = count
 				pairList[i].Word = word
-				sort.Slice(pairList, func(i, j int) bool { return pairList[i].Count < pairList[j].Count })
+				sort.Slice(pairList, func(i, j int) bool {
+					return pairList[i].Count < pairList[j].Count
+				})
 				break
 			}
 		}
