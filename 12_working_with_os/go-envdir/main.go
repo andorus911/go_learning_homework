@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -9,9 +10,15 @@ import (
 )
 
 func main() {
-
+	if len(os.Args) < 3 {
+		fmt.Println("Please check the env directory and application to run.")
+	}
+	t, _ := ReadDir(os.Args[1])
+	c := RunCmd(os.Args[2:], t)
+	os.Exit(c)
 }
 
+// ReadDir reads directory files and their content
 func ReadDir(dir string) (map[string]string, error) {
 	filesFromDir := make(map[string]string)
 
@@ -25,7 +32,7 @@ func ReadDir(dir string) (map[string]string, error) {
 			if err != nil {
 				return err
 			}
-			filesFromDir[path] = string(b)
+			filesFromDir[info.Name()] = string(b)
 		}
 		return nil
 	})
@@ -36,8 +43,13 @@ func ReadDir(dir string) (map[string]string, error) {
 	return filesFromDir, nil
 }
 
+// RunCmd runs a command with special env and returns exit code of the command
 func RunCmd(cmd []string, env map[string]string) int {
 	cmdToRun := exec.Command(cmd[0], cmd[1:]...)
+
+	cmdToRun.Stdout = os.Stdout
+	cmdToRun.Stderr = os.Stderr
+	cmdToRun.Stdin = os.Stdin
 
 	envSlice := make([]string, len(env))
 	i := 0
@@ -45,15 +57,13 @@ func RunCmd(cmd []string, env map[string]string) int {
 		envSlice[i] = key + "=" + v
 		i++
 	}
-	cmdToRun.Env = envSlice
+	cmdToRun.Env = envSlice // or append
 
-	err := cmdToRun.Start()
-	if err != nil {
-		log.Println("Command started with error:", err)
-	}
-	err = cmdToRun.Wait()
-	if err != nil {
+	if err := cmdToRun.Run(); err != nil {
 		log.Println("Command finished with error:", err)
+		if exitError, ok := err.(*exec.ExitError); ok {
+			return exitError.ExitCode()
+		}
 	}
-	return 0 // TO DO
+	return 0
 }
