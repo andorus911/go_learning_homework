@@ -2,12 +2,14 @@ package main
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
 func main() {
-	
+
 }
 
 func ReadDir(dir string) (map[string]string, error) {
@@ -34,4 +36,24 @@ func ReadDir(dir string) (map[string]string, error) {
 	return filesFromDir, nil
 }
 
-//func RunCmd(cmd []string, env map[string]string) int {}
+func RunCmd(cmd []string, env map[string]string) int {
+	cmdToRun := exec.Command(cmd[0], cmd[1:]...)
+
+	envSlice := make([]string, len(env))
+	i := 0
+	for key, v := range env {
+		envSlice[i] = key + "=" + v
+		i++
+	}
+	cmdToRun.Env = envSlice
+
+	err := cmdToRun.Start()
+	if err != nil {
+		log.Println("Command started with error:", err)
+	}
+	err = cmdToRun.Wait()
+	if err != nil {
+		log.Println("Command finished with error:", err)
+	}
+	return 0 // TO DO
+}
