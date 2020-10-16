@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/spf13/viper"
+	"go_learning_homework/go-calendar-ms/api"
 	"go_learning_homework/go-calendar-ms/logger"
 	"log"
 )
@@ -39,4 +40,6 @@ func main() {
 
 	lg := logger.NewLogger(cfg.LogFile, cfg.LogLevel)
 	defer lg.Sync()
+
+	api.StartServer(cfg.HttpListen, lg)
 }
