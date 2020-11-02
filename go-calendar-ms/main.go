@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/spf13/viper"
 	"go_learning_homework/go-calendar-ms/api"
+	"go_learning_homework/go-calendar-ms/internal/domain/services"
 	"go_learning_homework/go-calendar-ms/logger"
+	dbevent "go_learning_homework/go-calendar-ms/tools/dbimit"
 	"log"
+	"time"
 )
 
 type config struct {
@@ -41,5 +45,10 @@ func main() {
 	lg := logger.NewLogger(cfg.LogFile, cfg.LogLevel)
 	defer lg.Sync()
 
-	api.StartServer(cfg.HttpListen, lg)
+	db := make(dbevent.DBtype)
+	service := services.EventService{EventStorage: db}
+	ev, _ := service.CreateEvent(context.Background(), "окулист", "окулист", "me", time.Now(), time.Now().Add(time.Hour * 2))
+	service.RemoveEventById(context.Background(), ev.Id)
+
+	api.StartServer(cfg.HttpListen, *lg)
 }

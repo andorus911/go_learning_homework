@@ -37,7 +37,7 @@ func (es *EventService) RemoveEventById(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	err = es.EventStorage.DeleteEvent(ctx, event)
+	err = es.EventStorage.DeleteEvent(ctx, &event)
 	return err
 }
 
@@ -60,14 +60,14 @@ func (es *EventService) EditEvent(ctx context.Context, id string, newEvent model
 		event.EndTime = *newEvent.EndTime
 	}
 
-	err = es.EventStorage.SaveEvent(ctx, event)
+	err = es.EventStorage.SaveEvent(ctx, &event)
 	if err != nil {
 		return nil, err
 	}
-	return event, nil
+	return &event, nil
 }
 
-func (es *EventService) ShowOwnersEvents(ctx context.Context, owner string) ([]*models.Event, error) {
+func (es *EventService) ShowOwnersEvents(ctx context.Context, owner string) ([]models.Event, error) {
 	events, err := es.EventStorage.GetEventByOwnerStartTime(ctx, owner, time.Now())
 	if err != nil {
 		return nil, err
