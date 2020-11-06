@@ -3,10 +3,10 @@ package models
 import "time"
 
 type Event struct {
-	Id          string // todo uuid
+	Id          int64 // todo uuid
 	Title       string
 	Description string
-	Owner       string
+	Owner       int64
 	StartTime   time.Time
 	EndTime     time.Time // mb I should do it as a pointer? for nil
 }

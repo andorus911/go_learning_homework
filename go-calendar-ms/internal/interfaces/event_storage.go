@@ -7,8 +7,8 @@ import (
 )
 
 type EventStorage interface {
-	SaveEvent(ctx context.Context, event *models.Event) error
-	DeleteEvent(ctx context.Context, event *models.Event) error
-	GetEventById(ctx context.Context, id string) (models.Event, error)
-	GetEventByOwnerStartTime(ctx context.Context, owner string, startTime time.Time) ([]models.Event, error)
+	SaveEvent(ctx context.Context, event models.Event) (int64, error)
+	DeleteEventById(ctx context.Context, id int64) error
+	GetEventById(ctx context.Context, id int64) (*models.Event, error)
+	GetEventsByOwnerStartTime(ctx context.Context, owner int64, startTime time.Time) ([]models.Event, error)
 }
