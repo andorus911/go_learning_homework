@@ -6,30 +6,39 @@ import (
 	"fmt"
 	"github.com/jackc/pgtype"
 	_ "github.com/jackc/pgx/stdlib"
+	"go.uber.org/zap"
 	"go_learning_homework/go-calendar-ms/internal/domain/models"
-	"log"
 	"time"
 )
 
+// a dummy
 type DB struct {}
 var d DB
 
 var db *sql.DB
+var lg *zap.Logger
 
-func InitDB(ctx context.Context) DB {
-	// connection to DB
-	dsn := "postgres://postgres:postgres@localhost:5432/gocalendar"//?sslmode=verify-full"
-	// todo config
-	connection, err := sql.Open("pgx", dsn)
+func InitDB(ctx context.Context, zlg *zap.Logger, sqlUser, sqlPassword, sqlHost, sqlPort, dbName string) (DB, error) {
+	// data source name
+	dsn := fmt.Sprintf(`postgres://%v:%v@%v:%v/%v`, sqlUser, sqlPassword, sqlHost, sqlPort, dbName)//?sslmode=verify-full"
+
+	cxn, err := sql.Open("pgx", dsn)
 	if err != nil {
-		log.Fatalf("failed to load driver: %v", err)
-	}
-	db = connection
-	if err := db.PingContext(ctx); err != nil {
-		log.Fatalf("failed to ping db: %v", err)
+		lg.Fatal("failed to load driver: " + err.Error())
 	}
 
-	return d
+	db = cxn
+	if err := db.PingContext(ctx); err != nil {
+		lg.Fatal("failed to ping db: " + err.Error())
+	}
+	lg = zlg
+
+	return d, nil
+}
+
+// Close the DB connection
+func CloseDBCxn() error {
+	return db.Close()
 }
 
 // Event
@@ -45,17 +54,21 @@ func (d DB) SaveEvent(ctx context.Context, event models.Event) (int64, error) {
 	// is it ok send Time as pgTime?
 	rows, err := db.QueryContext(ctx, query, event.Owner, event.Title, event.Description, startDate, event.StartTime, endDate, event.EndTime)
 	if err != nil {
-		log.Printf("failed to load query: %v", err)
+		lg.Error("failed to load query: " + err.Error())
 		return 0, err
 	}
-	defer rows.Close() // TODO add error handle
+	defer func() {
+		if err := rows.Close(); err != nil {
+			lg.Error("failed to close rows" + err.Error())
+		}
+	}()
 
 	rows.Next()
 
 	var id int64
 	if err := rows.Scan(&id); err != nil {
-		log.Printf("failed to scan a row: %v", err)
-		return 0, nil
+		lg.Error("failed to scan a row: " + err.Error())
+		return 0, err
 	}
 
 	return id, nil
@@ -66,10 +79,14 @@ func (d DB) DeleteEventById(ctx context.Context, id int64) error {
 
 	rows, err := db.QueryContext(ctx, query, id)
 	if err != nil {
-		log.Printf("failed to load query: %v", err)
+		lg.Error("failed to load query: " + err.Error())
 		return err
 	}
-	defer rows.Close() // TODO add error handle
+	defer func() {
+		if err := rows.Close(); err != nil {
+			lg.Error("failed to close rows" + err.Error())
+		}
+	}()
 
 	return nil
 }
@@ -79,10 +96,15 @@ func (d DB) GetEventById(ctx context.Context, id int64) (*models.Event, error) {
 
 	rows, err := db.QueryContext(ctx, query, id)
 	if err != nil {
-		log.Printf("failed to load query: %v", err)
+		lg.Error("failed to load query: " + err.Error())
 		return nil, err
 	}
-	defer rows.Close() // TODO add error handle
+	defer func() {
+		if err := rows.Close(); err != nil {
+			lg.Error("failed to close rows" + err.Error())
+		}
+	}()
+
 	rows.Next()
 
 	// scanning and parsing
@@ -93,7 +115,7 @@ func (d DB) GetEventById(ctx context.Context, id int64) (*models.Event, error) {
 		var startDate, endDate pgtype.Date
 
 		if err := rows.Scan(&id, &owner, &title, &description, &startDate, &startTime, &endDate, &endTime); err != nil {
-			log.Printf("failed to scan a row: %v", err)
+			lg.Error("failed to scan a row: " + err.Error())
 			return nil, err
 		}
 
@@ -107,7 +129,7 @@ func (d DB) GetEventById(ctx context.Context, id int64) (*models.Event, error) {
 		}
 
 		if err := rows.Err(); err != nil {
-			log.Printf("failed to get a result after scan a row: %v", err)
+			lg.Error("failed to get a result after scan a row: " + err.Error())
 			return nil, err
 		}
 
@@ -123,10 +145,14 @@ func (d DB) GetEventsByOwnerStartTime(ctx context.Context, owner int64, startTim
 
 	rows, err := db.QueryContext(ctx, query, owner, startDate, startTime)
 	if err != nil {
-		log.Printf("failed to load query: %v", err)
+		lg.Error("failed to load query: " + err.Error())
 		return nil, err
 	}
-	defer rows.Close() // TODO add error handle
+	defer func() {
+		if err := rows.Close(); err != nil {
+			lg.Error("failed to close rows" + err.Error())
+		}
+	}()
 
 	events := make([]models.Event, 1)
 	for rows.Next() {
@@ -136,11 +162,9 @@ func (d DB) GetEventsByOwnerStartTime(ctx context.Context, owner int64, startTim
 		var startDate, endDate pgtype.Date
 
 		if err := rows.Scan(&id, &owner, &title, &description, &startDate, &startTime, &endDate, &endTime); err != nil {
-			log.Printf("failed to scan a row: %v", err)
+			lg.Error("failed to scan a row: " + err.Error())
 			return nil, err
 		}
-
-		fmt.Printf("%v %v %v %v %v %v \n", id, owner, title, description, startDate.Time.Add(time.Duration(startTime.Microseconds) * time.Microsecond), endDate.Time.Add(time.Duration(endTime.Microseconds) * time.Microsecond))
 
 		event := models.Event{
 			Id:          id,
@@ -152,7 +176,7 @@ func (d DB) GetEventsByOwnerStartTime(ctx context.Context, owner int64, startTim
 		}
 
 		if err := rows.Err(); err != nil {
-			log.Printf("failed to get a result after scan a row: %v", err)
+			lg.Error("failed to get a result after scan a row: " + err.Error())
 			return nil, err
 		}
 

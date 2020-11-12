@@ -8,15 +8,20 @@ import (
 	"go_learning_homework/go-calendar-ms/api"
 	"go_learning_homework/go-calendar-ms/internal/domain/services"
 	"go_learning_homework/go-calendar-ms/logger"
-	dbevent "go_learning_homework/go-calendar-ms/tools/dbimit"
+	postgres "go_learning_homework/go-calendar-ms/tools/postgres"
 	"log"
-	"time"
 )
 
 type config struct {
 	HttpListen string `mapstructure:"http_listen"`
 	LogFile    string `mapstructure:"log_file"`
 	LogLevel   string `mapstructure:"log_level"`
+
+	SqlUser string `mapstructure:"sql_user"`
+	SqlPassword string `mapstructure:"sql_pass"`
+	SqlHost string `mapstructure:"sql_host"`
+	SqlPort string `mapstructure:"sql_port"`
+	DbName string `mapstructure:"db_name"`
 }
 
 func main() {
@@ -45,10 +50,20 @@ func main() {
 	lg := logger.NewLogger(cfg.LogFile, cfg.LogLevel)
 	defer lg.Sync()
 
-	db := make(dbevent.DBtype)
-	service := services.EventService{EventStorage: db}
-	ev, _ := service.CreateEvent(context.Background(), "окулист", "окулист", "me", time.Now(), time.Now().Add(time.Hour * 2))
-	service.RemoveEventById(context.Background(), ev.Id)
+	db, err := postgres.InitDB(context.Background(), lg, cfg.SqlUser, cfg.SqlPassword, cfg.SqlHost, cfg.SqlPort, cfg.DbName)
+	if err != nil {
+		lg.Fatal(err.Error())
+	}
+	defer func() {
+		if err := postgres.CloseDBCxn(); err != nil {
+			lg.Error(err.Error())
+		}
+	}()
 
-	api.StartServer(cfg.HttpListen, *lg)
+	eventService := services.EventService{EventStorage: db}
+
+	//evt, _ := service.CreateEvent(context.Background(), "окулист", "окулист", 1, time.Now(), time.Now().Add(time.Hour * 2))
+	//service.RemoveEventById(context.Background(), evt.Id)
+
+	api.StartServer(cfg.HttpListen, *lg, &eventService)
 }
