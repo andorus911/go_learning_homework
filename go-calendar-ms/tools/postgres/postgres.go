@@ -12,7 +12,8 @@ import (
 )
 
 // a dummy
-type DB struct {}
+type DB struct{}
+
 var d DB
 
 var db *sql.DB
@@ -20,7 +21,7 @@ var lg *zap.Logger
 
 func InitDB(ctx context.Context, zlg *zap.Logger, sqlUser, sqlPassword, sqlHost, sqlPort, dbName string) (DB, error) {
 	// data source name
-	dsn := fmt.Sprintf(`postgres://%v:%v@%v:%v/%v`, sqlUser, sqlPassword, sqlHost, sqlPort, dbName)//?sslmode=verify-full"
+	dsn := fmt.Sprintf(`postgres://%v:%v@%v:%v/%v`, sqlUser, sqlPassword, sqlHost, sqlPort, dbName) //?sslmode=verify-full"
 
 	cxn, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -59,7 +60,7 @@ func (d DB) SaveEvent(ctx context.Context, event models.Event) (int64, error) {
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
-			lg.Error("failed to close rows" + err.Error())
+			lg.Error("failed to close rows: " + err.Error())
 		}
 	}()
 
@@ -75,7 +76,7 @@ func (d DB) SaveEvent(ctx context.Context, event models.Event) (int64, error) {
 }
 
 func (d DB) DeleteEventById(ctx context.Context, id int64) error {
-	query := `delete from events where id = $1` // do we need a returning?
+	query := `delete from events where id = $1;` // do we need a returning?
 
 	rows, err := db.QueryContext(ctx, query, id)
 	if err != nil {
@@ -84,7 +85,7 @@ func (d DB) DeleteEventById(ctx context.Context, id int64) error {
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
-			lg.Error("failed to close rows" + err.Error())
+			lg.Error("failed to close rows: " + err.Error())
 		}
 	}()
 
@@ -92,7 +93,7 @@ func (d DB) DeleteEventById(ctx context.Context, id int64) error {
 }
 
 func (d DB) GetEventById(ctx context.Context, id int64) (*models.Event, error) {
-	query := `select * from events where id = $1`
+	query := `select * from events where id = $1;`
 
 	rows, err := db.QueryContext(ctx, query, id)
 	if err != nil {
@@ -101,7 +102,7 @@ func (d DB) GetEventById(ctx context.Context, id int64) (*models.Event, error) {
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
-			lg.Error("failed to close rows" + err.Error())
+			lg.Error("failed to close rows: " + err.Error())
 		}
 	}()
 
@@ -138,23 +139,27 @@ func (d DB) GetEventById(ctx context.Context, id int64) (*models.Event, error) {
 }
 
 func (d DB) GetEventsByOwnerStartTime(ctx context.Context, owner int64, startTime time.Time) ([]models.Event, error) {
-	query := `select * from events where owner = $1, start_date = $2, start_time = $3`
+	query := `
+		select * from events
+		where owner = $1
+		and ( cast(start_date as date) >= $2
+		or case when cast(start_date as date) = $2 then cast(start_time as time without time zone) >= $3 end );`
 
 	year, month, day := startTime.Date()
-	startDate := fmt.Sprintf("%v-%v-%v", year, month, day)
+	startDate := fmt.Sprintf("%v-%v-%v", year, int(month), day)
 
-	rows, err := db.QueryContext(ctx, query, owner, startDate, startTime)
+	rows, err := db.QueryContext(ctx, query, owner, startDate, startTime.Format("15:04:05"))
 	if err != nil {
 		lg.Error("failed to load query: " + err.Error())
 		return nil, err
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
-			lg.Error("failed to close rows" + err.Error())
+			lg.Error("failed to close rows: " + err.Error())
 		}
 	}()
 
-	events := make([]models.Event, 1)
+	events := make([]models.Event, 0)
 	for rows.Next() {
 		var id, owner int64
 		var title, description string
@@ -183,5 +188,5 @@ func (d DB) GetEventsByOwnerStartTime(ctx context.Context, owner int64, startTim
 		events = append(events, event)
 	}
 
-	return events, nil
+	return events, nil // todo catch null answer
 }
