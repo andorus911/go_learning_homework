@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+message Event {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string owner = 4;
+  google.protobuf.Timestamp startTime = 5;
+  google.protobuf.Timestamp endTime = 6;
+}
