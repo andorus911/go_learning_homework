@@ -1,0 +1,1 @@
+protoc -I%INCLUDE% --go_out=. --go-grpc_out=. -I. .\crudEvent.proto
