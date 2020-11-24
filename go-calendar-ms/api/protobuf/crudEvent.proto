@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+package gocalendar;
+
+option go_package = ".;gocalendar";
+
+message EventResponseMessage {
+  int64 id = 1;
+  string title = 2;
+  string description = 3;
+  int64 owner = 4;
+  google.protobuf.Timestamp startTime = 5;
+  google.protobuf.Timestamp endTime = 6;
+}
+
+message EventsResponseMessage {
+  repeated EventResponseMessage events = 1;
+}
+
+message CreateEventMessage {
+  string title = 1;
+  string description = 2;
+  int64 owner = 3;
+  google.protobuf.Timestamp startTime = 4;
+  google.protobuf.Timestamp endTime = 5;
+}
+
+message ReadEventsMessage {
+  int64 owner = 1;
+}
+
+message UpdateEventMessage {
+  int64 id = 1;
+  optional string title = 2;
+  optional string description = 3;
+  // int64 owner = 4;
+  optional google.protobuf.Timestamp startTime = 5;
+  optional google.protobuf.Timestamp endTime = 6;
+}
+
+message DeleteEventMessage {
+  int64 id = 1;
+}
+
+service GoCalendarCRUD {
+  rpc createEvent (CreateEventMessage) returns (EventResponseMessage);
+  rpc readEvents (ReadEventsMessage) returns (EventsResponseMessage);
+  rpc updateEvent (UpdateEventMessage) returns (EventResponseMessage);
+  rpc deleteEvent (DeleteEventMessage) returns (google.protobuf.Empty);
+}
