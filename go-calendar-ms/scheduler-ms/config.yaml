@@ -1,0 +1,14 @@
+---
+log_file: .\scheduler_logs
+log_level: debug
+
+sql_user: postgres
+sql_pass: postgres
+sql_host: localhost
+sql_port: 5432
+db_name: gocalendar
+
+rabbit_user: guest
+rabbit_pass: guest
+rabbit_host: localhost
+rabbit_port: 5672

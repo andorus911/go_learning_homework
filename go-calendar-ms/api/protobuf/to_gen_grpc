@@ -1,1 +1,0 @@
-protoc -I%INCLUDE% --go_out=:..\grpc --experimental_allow_proto3_optional --go-grpc_out=:..\grpc -I. .\crudEvent.proto

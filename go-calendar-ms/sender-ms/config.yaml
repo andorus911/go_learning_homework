@@ -1,0 +1,8 @@
+---
+log_file: .\sender_logs
+log_level: debug
+
+rabbit_user: guest
+rabbit_pass: guest
+rabbit_host: localhost
+rabbit_port: 5672
